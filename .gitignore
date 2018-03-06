@@ -1,4 +1,5 @@
 /pars_2
+/test
 *.pyc
 *.slurm
 *.out
