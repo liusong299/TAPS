@@ -1,0 +1,140 @@
+;
+;	File 'mdout.mdp' was generated
+;	By user: onbekend (0)
+;	On host: onbekend
+;	At date: Thu Nov 13 21:24:25 2014
+;
+
+; VARIOUS PREPROCESSING OPTIONS
+; Preprocessor information: use cpp syntax.
+; e.g.: -I/home/joe/doe -I/home/mary/roe
+include                  = 
+; e.g.: -DPOSRES -DFLEXIBLE (note these variable names are case sensitive)
+define                   = 
+
+; RUN CONTROL PARAMETERS
+integrator               = md
+; Start time and timestep in ps
+tinit                    = 0
+dt                       = 0.001
+nsteps                   = 250000
+; For exact run continuation or redoing part of a run
+init_step                = 0
+; Part index is updated automatically on checkpointing (keeps files separate)
+simulation_part          = 1
+; mode for center of mass motion removal
+comm-mode                = Angular
+; number of steps for center of mass motion removal
+nstcomm                  = 1
+; group(s) for center of mass motion removal
+comm-grps                =
+
+cutoff-scheme 		 = Group
+
+; NEIGHBORSEARCHING PARAMETERS
+; nblist update frequency
+nstlist			 = 0
+; ns algorithm (simple or grid)
+ns_type                  = simple
+; Periodic boundary conditions: xyz, no, xy
+pbc			 = no
+periodic_molecules       = no
+
+; nblist cut-off        
+rlist                    = 0
+; long-range cut-off for switched potentials
+rlistlong                = 1
+
+; OPTIONS FOR ELECTROSTATICS AND VDW
+; Method for doing electrostatics
+coulombtype		 = cutoff
+rcoulomb		 = 0
+
+; Method for doing Van der Waals
+vdwtype			 = cutoff
+rvdw			 = 0
+
+; Relative dielectric constant for the medium and the reaction field
+epsilon-r                = 1
+epsilon_rf               = 1
+
+; Apply long range dispersion corrections for Energy and Pressure
+DispCorr                 = No
+; Extension of the potential lookup tables beyond the cut-off
+table-extension          = 1
+; Seperate tables between energy group pairs
+energygrp_table          = 
+; Spacing for the PME/PPPM FFT grid
+fourierspacing           = 0.120
+; FFT grid size, when a value is 0 fourierspacing will be used
+fourier_nx               = 0
+fourier_ny               = 0
+fourier_nz               = 0
+; EWALD/PME/PPPM parameters
+pme_order                = 4
+ewald_rtol               = 1e-05
+ewald_geometry           = 3d
+epsilon_surface          = 0
+
+; IMPLICIT SOLVENT ALGORITHM
+implicit_solvent         = No
+
+; OPTIONS FOR WEAK COUPLING ALGORITHMS
+; Temperature coupling  
+tcoupl                   = v-rescale
+nsttcouple               = -1
+nh-chain-length          = 10
+; Groups to couple separately
+tc-grps                  = System
+; Time constant (ps) and reference temperature (K)
+tau_t                    = 0.2
+ref_t                    = 300
+; Pressure coupling     
+Pcoupl                   = No
+Pcoupltype               = Isotropic
+nstpcouple               = -1
+; Time constant (ps), compressibility (1/bar) and reference P (bar)
+tau_p                    = 0.5
+compressibility          = 4.5e-5
+ref_p                    = 1.0
+; Scaling of reference coordinates, No, All or COM
+
+
+; GENERATE VELOCITIES FOR STARTUP RUN
+gen_vel                  = yes
+gen_temp                 = 300.0
+gen_seed                 = -1
+
+; OPTIONS FOR BONDS    
+constraints              = none
+; Type of constraint algorithm
+constraint-algorithm     = Lincs
+; Do not constrain the start configuration
+continuation             = no
+; Use successive overrelaxation to reduce the number of shake iterations
+Shake-SOR                = no
+; Relative tolerance of shake
+shake-tol                = 1e-04
+; Highest order in the expansion of the constraint coupling matrix
+lincs-order              = 4
+; Number of iterations in the final step of LINCS. 1 is fine for
+; normal simulations, but use 2 to conserve energy in NVE runs.
+; For energy minimization with constraints it should be 4 to 8.
+lincs-iter               = 2
+; Lincs will write a warning to the stderr if in one step a bond
+; rotates over more degrees than
+lincs-warnangle          = 30
+; Convert harmonic bonds to morse potentials
+morse                    = no
+
+; OUTPUT CONTROL OPTIONS
+; Output frequency for coords (x), velocities (v) and forces (f)
+nstxout                  = 0
+nstvout                  = 0
+nstfout                  = 0
+; Output frequency for energies to log file and energy file
+nstlog                   = 10
+nstcalcenergy            = -1
+nstenergy                = 10
+; Output frequency and precision for .xtc file
+compressed-x-precision   = 1000

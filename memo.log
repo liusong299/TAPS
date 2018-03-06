@@ -1,0 +1,2 @@
+            cmd = plu + " " + dri + " --mf_xtc " + trjFile + " --plumed " + pluInput \
+                  + " 1>" + tmpOutFile + " 2>" + tmpOutFile
