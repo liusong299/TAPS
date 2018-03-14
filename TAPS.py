@@ -288,7 +288,7 @@ class TAPS(object):
 
         # tolerable asymmetry factor, determines how much deviation from the used for path reparameterization
         self.devMID = cf.getfloat('path reparameterization', 'devMID')
-        if devMID is None:
+        if self.devMID is None:
             raise ValueError(
                 "Tolerable deviation from vertical line between two distant nodes (devMID) is not given in parameter \
                 file %s\n  This parameter is crucial for path reparameterzation" % (parFile))
@@ -329,9 +329,9 @@ class TAPS(object):
             raise ValueError("Wall position of PCV-Z for MetaDynamics (zw, unit: nm^2) not given in parameter file %s" % (parFile))
 
         # wall strength of PCV-Z for MetaD
-        self.zwK = cf.getfloat('MetaD setup', 'zwK')
-        if self.zwK is None:
-            self.zwK = self.rsTol / (self.tolDist / 20) ** 2
+        #self.zwK = cf.getfloat('MetaD setup', 'zwK')
+        #if self.zwK is None:
+        self.zwK = self.rsTol / (self.tolDist / 20) ** 2
             # raise ValueError("Kappa for wall on PCV-Z is not given for MetaD in parameter file %s" % (parFile))
 
         # kappa for targeted MD
@@ -454,12 +454,12 @@ class TAPS(object):
     def meta_sample(self, dirMeta, dirRUNs):
         totTRJ = len(dirRUNs)  # the total number of trajectories to run
         # print("%d trajectories to sample in total." % totTRJ)
-        if self.mode == 'serial':
+        if self.runMode == 'serial':
             for i in range(totTRJ):
                 runDir = self.dirRoot + '/' + dirMeta + '/' + dirRUNs[i]
                 #self.runMeta(runDir)
                 runMeta(dire=runDir, engine=self.engine, runName=self.runName, pluName=self.pluName, cvOut=self.cvOut, trjName=self.trjName)
-        elif self.mode == 'parallel':
+        elif self.runMode == 'parallel':
             # record = []
             # lock = multiprocessing.Lock()
             # runDir_list = []
@@ -478,7 +478,7 @@ class TAPS(object):
                     #print("+++DEBUG+++ runMeta", tid, "of", N_jobs, ", size", size, ", rank", rank, "iter,", iter)
                     runMeta(dire=runDir, engine=self.engine, runName=self.runName, pluName=self.pluName,
                             cvOut=self.cvOut, trjName=self.trjName)
-        elif self.mode == 'qjobs':
+        elif self.runMode == 'qjobs':
             raise ValueError("qjobs version to be implemented")
 
     # ==================================================================================================================
@@ -549,11 +549,11 @@ class TAPS(object):
     def tmd_sample(self, dirMeta, dirTMD):
         totTRJ = len(dirTMD)  # the total number of trajectories to run
         # print("%d trajectories to sample in total." % totTRJ)
-        if self.mode == 'serial':
+        if self.runMode == 'serial':
             for i in range(totTRJ):
                 runDir = self.dirRoot + '/' + dirMeta + '/' + dirTMD[i]
                 runTMD(dire=runDir, engine=self.engine, runName=self.runName, pluName=self.pluName, trjName=self.trjName)
-        elif self.mode == 'parallel':
+        elif self.runMode == 'parallel':
             # record = []
             # lock = multiprocessing.Lock()
             # pool = multiprocessing.Pool(processes=8)
@@ -571,7 +571,7 @@ class TAPS(object):
                     runTMD(dire=runDir, engine=self.engine, runName=self.runName, pluName=self.pluName,
                            trjName=self.trjName)
                     #print("+++DEBUG+++ runTMD", tid, "of", N_jobs, ", size", size, ", rank", rank, "iter,", iter)
-        elif self.mode == 'qjobs':
+        elif self.runMode == 'qjobs':
             raise ValueError("qjobs version to be implemented")
         ## cat all tmd conformations together into one trajectory for reparameterization
         #listTMD = []
@@ -742,10 +742,9 @@ class TAPS(object):
                 dirTMDs = None
             dirTMDs = comm.bcast(dirTMDs, root=0)
             comm.Barrier()
-            #print("###DEBUG### Barrier before tmd_sample")
+
             dataTMD = self.tmd_sample(dirMeta,dirTMDs)
             comm.Barrier()
-            #print("###DEBUG### Barrier after tmd_sample")
             # use the tMD samples to insert
             if rank == 0:
                 for i in range(len(dirTMDs)):

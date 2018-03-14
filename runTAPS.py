@@ -31,7 +31,7 @@ print (dirPars, parFile, topFile, p0File, alignFile, rmsFile, tapsName)
 # =======================================================================================================================
 #                           import mpi4py for parallel computing
 # =======================================================================================================================
-import multiprocessing
+# import multiprocessing
 from mpi4py import MPI
 comm = MPI.COMM_WORLD
 size = comm.Get_size()
@@ -77,13 +77,9 @@ from copy import deepcopy
 #alignFile = 'align.ndx'      # atom index file for alignment
 #rmsFile = 'rms.ndx'         # atom index file for rmsd computation
 
-#rint ("###DEBUG### Size:", size, "Rank:", rank, "begining.")
 for i in range(n_start,n_taps+n_start):
     #tapsName = 'metEn_tol070_500ps_' + str(i)
     tapsName = tapsName + str(i).zfill(2)
-
-    #print("###DEBUG### Barrier before iteration")
-    #comm.Barrier()
 
     #if rank == 0:
     #    if not os.path.exists(tapsName):
@@ -107,9 +103,6 @@ for i in range(n_start,n_taps+n_start):
     
     if rank == 0:
         t0 = time.time()
-        #print("###DEBUG### Size:", size, "Rank:", rank, "running TAPS")
-        #print("###DEBUG###", dirPars, parFile, topFile, p0File, alignFile, rmsFile)
-        #print("###DEBUG###", dirPars, parFile, topFile, p0File, alignFile, rmsFile, file=f_log)
         taps = TAPS(dirPars, parFile, topFile, p0File, alignFile, rmsFile)
         te = time.time()
         print("    time-cost: ", te - t0, ' sec')
@@ -145,7 +138,6 @@ for i in range(n_start,n_taps+n_start):
         if rank == 0:
             dirRUNs = taps.meta_dirs(refPath, dirMeta)
             t0 = time.time()
-            #print("###DEBUG### Size:", size, "Rank:", rank, "running taps.meta_setup")
             taps.meta_setup(refPath, dirMeta, dirRUNs)
             t1 = time.time()
             print('   timecost: ', t1 - t0, ' sec')
@@ -156,26 +148,22 @@ for i in range(n_start,n_taps+n_start):
             #time.sleep(240)
 	    dirRUNs = None
         dirRUNs = comm.bcast(dirRUNs, root=0)
-        #print("###DEBUG### Barrier before meta_sample")
         comm.Barrier()
         if rank != 0:
             time.sleep(10)
             #print(" I am rank", rank, ", I slept 10 secs before meta_sample")
-        #print("###DEBUG### Size:", size, "Rank:", rank, "running taps.meta_sample")
         taps.meta_sample(dirMeta, dirRUNs)
         comm.Barrier()
-        #print("###DEBUG### Barrier after meta_sample")
-        #
+
         t0 = time.time()
         if rank == 0:
             print('   timecost: ',t0 - t1, ' sec')
             #print('   timecost: ',t0 - t1, ' sec', file=f_log)
             print("  ", iter, ": Finding median(z) conformations, update path")
             #print("  ", iter, ": Finding median(z) conformations, update path", file=f_log)
-        #print("###DEBUG### Barrier before meta_analyze")
+
         comm.Barrier()
         p_meta = taps.meta_analyze(dirMeta, dirRUNs)
-        #print("###DEBUG### Barrier after meta_analyze")
         comm.Barrier()
         t1 = time.time()
 
@@ -194,4 +182,3 @@ for i in range(n_start,n_taps+n_start):
         p_meta = comm.bcast(p_meta, root=0)
         refPath = comm.bcast(refPath, root=0)
         comm.Barrier()
-'''
