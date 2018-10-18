@@ -30,7 +30,6 @@ from Confs import Confs
 from PcvInd import PcvInd
 from Path import Path
 
-import ConfigParser
 
 # =======================================================================================================================
 #                           import mpi4py for parallel computing
@@ -184,23 +183,28 @@ class TAPS(object):
 
         # MD parameters
         # engine specific input check
-
-        cf = ConfigParser.ConfigParser()
-        cf.read('./pars/taps.ini')
-        self.engine = cf.get('MD engine','engine')
-        self.groTOP = cf.get('MD engine','groTOP')
-        self.groMDP = cf.get('MD engine','groMDP')
-        if self.engine is None:
+        match = re.search("engine=.*\n", pars)
+        if match is not None:
+            self.engine = re.split('=', match.group(0).rstrip('\n'))[1]
+        else:
             raise ValueError("MD engine not given in parameter file %s" % (parFile))
         if self.engine == 'GROMACS':
-            if self.groTOP is None:
+            match = re.search("groTOP=.*\n", pars)
+            if match is not None:
+                self.groTOP = re.split('=', match.group(0).rstrip('\n'))[1]
+                if not os.path.exists(self.dirPar + '/' + self.groTOP):
+                    raise ValueError("GROMACS topology file %s is not found in directory %s" % (self.groTOP, \
+                                                                                                self.dirPar))
+            else:
                 raise ValueError("GROMACS topology file not given in %s" % (parFile))
-            elif not os.path.exists(self.dirPar + '/' + self.groTOP):
-                raise ValueError("GROMACS topology file %s is not found in directory %s" % (self.groTOP, elf.dirPar))
-            if self.groMDP is None:
+            match = re.search("groMDP=.*\n", pars)
+            if match is not None:
+                self.groMDP = re.split('=', match.group(0).rstrip('\n'))[1]
+                if not os.path.exists(self.dirPar + '/' + self.groMDP):
+                    raise ValueError("GROMACS template mdp file %s is not found in directory %s" % (self.groMDP, \
+                                                                                                    self.dirPar))
+            else:
                 raise ValueError("gromacs mdp file %s not given in %s" % (parFile))
-            elif not os.path.exists(self.dirPar + '/' + self.groMDP):
-                raise ValueError("GROMACS template mdp file %s is not found in directory %s" % (self.groMDP, self.dirPar))
         elif self.engine == 'NAMD':
             raise ValueError('NAMD is not supported yet')
         elif self.engine == 'AMBER':
@@ -209,54 +213,67 @@ class TAPS(object):
             raise ValueError("unknown MD engine %s" % self.engine)
 
         # mode = {serial, parallel, qjob}
-        self.runMode = cf.get('MD setup', 'runMode')
-        self.timeStep = cf.getfloat('MD setup', 'timeStep')
-        self.freqTRJ = cf.getint('MD setup', 'freqTRJ')
-
-        if self.runMode is None:
+        match = re.search("runMode=.*\n", pars)
+        if match is not None:
+            self.mode = re.split('=', match.group(0).rstrip('\n'))[1]
+        else:
             raise ValueError("Mode of running (runMode) not given in parameter file %f" % (parFile))
 
         # time step
-        if self.timeStep is None:
+        match = re.search("timeStep=.*\n", pars)
+        if match is not None:
+            self.timeStep = float(re.split('=', match.group(0).rstrip('\n'))[1])
+        else:
             raise ValueError("MD timestep (timestep, unit: ps) not given in parameter file %f" % (parFile))
 
-        # output frequency of trajectories
-        if self.freqTRJ is None:
-            raise ValueError("Output frequency of sampling trajectories (freqTRJ) not given in parameter file %f" % (parFile))
-
-        #[MetaD setup]
-        self.zw = cf.getfloat('MetaD setup','zw')
-        self.lenSample = cf.getint('MetaD setup', 'lenSample')
-        self.kappa = cf.getint('MetaD setup', 'kappa')
-        self.rsTol = cf.getint('MetaD setup', 'tolRS')
-        self.gauHeight = cf.getfloat('MetaD setup', 'gauHeight')
-        self.sigma = cf.getfloat('MetaD setup', 'gauWidth')
-        self.tauMetaD = cf.getint('MetaD setup', 'tauMetaD')
-        self.temp = cf.getint('MetaD setup', 'temp')
-        self.bf = cf.getint('MetaD setup', 'biasFactor')
-
-        if self.lenSample is None:
-            raise ValueError("Amount of sampling per taps iteration ('lenSample', unit: ps) not given in parameter file %f" % (parFile))
+        match = re.search("lenSample=.*\n", pars)
+        if match is not None:
+            self.lenSample = float(re.split('=', match.group(0).rstrip('\n'))[1])
+        else:
+            raise ValueError("Amount of sampling per taps iteration ('lenSample', unit: ps) not given in \
+            parameter file %f" % (parFile))
 
         # gaussian height for MetaD
-        if self.gauHeight is None:
+        match = re.search("gauHeight=.*\n", pars)
+        if match is not None:
+            self.gauHeight = float(re.split('=', match.group(0).rstrip('\n'))[1])
+        else:
             raise ValueError("Height of gaussian for MetaDynamics (gh) not give in parameter file %s" % (parFile))
 
         # gaussian width for MetaD
-        if self.sigma is None:
+        match = re.search("gauWidth=.*\n", pars)
+        if match is not None:
+            self.sigma = float(re.split('=', match.group(0).rstrip('\n'))[1])
+        else:
             raise ValueError("Width of gaussian for MetaDynamics (sigma) not given in parameter file %s" % (parFile))
 
         # deposition interval for MetaD
-        if self.tauMetaD is None:
+        match = re.search("tauMetaD=.*\n", pars)
+        if match is not None:
+            self.tauMetaD = float(re.split('=', match.group(0).rstrip('\n'))[1])
+        else:
             raise ValueError("Period for adding gaussians (tauMetaD) not given in parameter file %s" % (parFile))
 
         # biasFactor for well-tempered MetaD
-        if self.bf is None:
+        match = re.search("biasFactor=.*\n", pars)
+        if match is not None:
+            self.bf = int(re.split('=', match.group(0).rstrip('\n'))[1])
+        else:
             raise ValueError("BiasFactor for wt-MetaDynamics (biasFactor, 2-10) not given  in parameter file %s" % (parFile))
 
         # system temperature for well-tempered MetaD
-        if self.temp is None:
+        match = re.search("temp=.*\n", pars)
+        if match is not None:
+            self.temp = int(re.split('=', match.group(0).rstrip('\n'))[1])
+        else:
             raise ValueError("Temperature for wt-MetaDynamics (temp) not given in parameter file %s" % (parFile))
+
+        # output frequency of trajectories
+        match = re.search("freqTRJ=.*\n", pars)
+        if match is not None:
+            self.freqTRJ = int(re.split('=', match.group(0).rstrip('\n'))[1])
+        else:
+            raise ValueError("Output frequency of sampling trajectories (freqTRJ) not given in parameter file %f" % (parFile))
 
         fr = open(self.dirPar + '/' + self.groMDP, 'r+')
         linesMDP = fr.readlines()
@@ -269,81 +286,103 @@ class TAPS(object):
         self.groMDP = mdpFile
 
         # output frequency of trajectories
-        if self.kappa is None:
+        match = re.search("kappa=.*\n", pars)
+        if match is not None:
+            self.kappa = int(re.split('=', match.group(0).rstrip('\n'))[1])
+        else:
             raise ValueError("Wall strength on PCV-s (kappa, 10-50) not given in parameter file %f" % (parFile))
 
         # tolerable restraining potential to ensure "physically irrelevant" conformations are selected
         # selecting frames with small restrain potential is a more direct approach than ds-s[0]<sTol
         # because it makes the choice independent from the kappa of the restraining potential
-        if self.rsTol is None:
+        match = re.search("tolRS=.*\n", pars)
+        if match is not None:
+            self.rsTol = float(re.split('=', match.group(0).rstrip('\n'))[1])
+        else:
             raise ValueError("Tolerable restraining potential (rsTol) not found in parameter file %s \n  This parameter\
              is crucial for selecting frames from MetaD trajectories" % (parFile))
 
-        # parameters for path-reparameterization
-        # tolerable distance between neighbor nodes, used for reparameterization
-        self.tolDist = cf.getfloat('path reparameterization', 'tolDist')
-        if self.tolDist is None:
+	    # parameters for path-reparameterization
+	    # tolerable distance between neighbor nodes, used for reparameterization
+        match = re.search("tolDist=.*\n", pars)
+        if match is not None:
+            self.tolDist = float(re.split('=', match.group(0).rstrip('\n'))[1])
+        else:
             raise ValueError("Tolerable maximum distance (tolDist) between neighbor nodes not given in parameter\
              file %s\n  This parameter is crucial for path reparameterzation" % (parFile))
 
         # tolerable asymmetry factor, determines how much deviation from the used for path reparameterization
-        self.devMID = cf.getfloat('path reparameterization', 'devMID')
-        if self.devMID is None:
+        match = re.search("devMID=.*\n", pars)
+        if match is not None:
+            self.devMID = float(re.split('=', match.group(0).rstrip('\n'))[1])
+            if self.devMID > 1 or self.devMID <= 0:
+                raise ValueError("Parameter devMID out of range ( 0<devMID<=1 required )")
+        else:
             raise ValueError(
                 "Tolerable deviation from vertical line between two distant nodes (devMID) is not given in parameter \
                 file %s\n  This parameter is crucial for path reparameterzation" % (parFile))
-        elif self.devMID > 1 or self.devMID <= 0:
-                raise ValueError("Parameter devMID out of range ( 0<devMID<=1 required )")
 
         # tolerable cosTheta, used for reparameterization
-        self.tolCos = cf.getfloat('path reparameterization', 'tolCos')
-        if self.tolCos is None:
+        match = re.search("tolCos=.*\n", pars)
+        if match is not None:
+            self.tolCos = float(re.split('=', match.group(0).rstrip('\n'))[1])
+            if self.tolCos > 0.5:
+                self.tolCos = 0.5
+                print("Tolerable cos(theta) in parameter file %s must be <=0.5\n  setting to 0.5" % (parFile))
+        else:
             raise ValueError(
                 "Tolerable cos(theta) to select \"middle\" conformations between neighbor nodes is not given in \
                 parameter file %s" % (parFile))
-        elif self.tolCos > 0.5:
-                self.tolCos = 0.5
-                print("Tolerable cos(theta) in parameter file %s must be <=0.5\n  setting to 0.5" % (parFile))
 
         # straightening factor
         sub_i = self.initNode.atom_slice(self.pcvInd.atomSlice)
         sub_f = self.finalNode.atom_slice(self.pcvInd.atomSlice)
         sub_f.superpose(sub_i, 0, self.pcvInd.align)
         dist_term = md.rmsd(sub_f, sub_i, 0, self.pcvInd.rms)
-
-        self.stf = cf.getfloat('path reparameterization','stf')
-        if self.stf is None:
+        match = re.search("stf=.*\n", pars)
+        if match is not None:
+            self.stf = float(re.split('=', match.group(0).rstrip('\n'))[1])
+            if ((self.stf < 1) or (self.stf > (dist_term/self.tolDist/2.5))):
+                 print("Straightening factor (stf) is out of range (must be 1 <= stf <= d[0,end]/tolDist )")
+                 self.stf = dist_term / self.tolDist / 3
+                 print("Setting stf as d[0,end]/tolDist/3: stf=", self.stf)
+        else:
             print("Straightening Factor for path reparameterization (stf) not given in \
                     parameter file %s" % (parFile))
             self.stf = dist_term / self.tolDist / 3
             print("Setting stf as d[0,end]/tolDist/3: stf=", self.stf)
-        elif (self.stf < 1) or (self.stf > (dist_term/self.tolDist/2.5)):
-                 print("Straightening factor (stf) is out of range (must be 1 <= stf <= d[0,end]/tolDist )")
-                 self.stf = dist_term / self.tolDist / 3
-                 print("Setting stf as d[0,end]/tolDist/3: stf=", self.stf)
 
-        self.zw = cf.getfloat('MetaD setup','zw')
-        if self.zw is not None:
+        # wall position of PCV-Z for MetaD
+        match = re.search("zw=.*\n", pars)
+        if match is not None:
+            self.zw = float(re.split('=', match.group(0).rstrip('\n'))[1])
             self.zw = (self.zw * self.tolDist) ** 2
         else:
             raise ValueError("Wall position of PCV-Z for MetaDynamics (zw, unit: nm^2) not given in parameter file %s" % (parFile))
 
         # wall strength of PCV-Z for MetaD
-        #self.zwK = cf.getfloat('MetaD setup', 'zwK')
-        #if self.zwK is None:
-        self.zwK = self.rsTol / (self.tolDist / 20) ** 2
+        match = re.search("zwK=.*\n", pars)
+        if match is not None:
+            self.zwK = float(re.split('=', match.group(0).rstrip('\n'))[1])
+        else:
+            self.zwK = self.rsTol / (self.tolDist / 20) ** 2
             # raise ValueError("Kappa for wall on PCV-Z is not given for MetaD in parameter file %s" % (parFile))
 
         # kappa for targeted MD
-        self.kTMD = cf.getint('path reparameterization', 'kTMD')
-        if self.kTMD is None:
+        match = re.search("kTMD=.*\n", pars)
+        if match is not None:
+            self.kTMD = int(re.split('=', match.group(0).rstrip('\n'))[1])
+        else:
             print("Kappa of targeted MD (kTMD) for path reparameterization is not given in \
                 parameter file %s" % (parFile))
 
         # length of targeted MD 
         # default length of targeted MD
-        self.lenTMD = cf.getfloat('path reparameterization', 'lenTMD')
-        if self.lenTMD is None:
+        self.lenTMD = 10
+        match = re.search("lenTMD=.*\n", pars)
+        if match is not None:
+            self.lenTMD = float(re.split('=', match.group(0).rstrip('\n'))[1])
+        else:
             print("Length of targeted MD (lenTMD) for path reparameterization is not given in \
                 parameter file %s" % (parFile))
 
@@ -454,12 +493,12 @@ class TAPS(object):
     def meta_sample(self, dirMeta, dirRUNs):
         totTRJ = len(dirRUNs)  # the total number of trajectories to run
         # print("%d trajectories to sample in total." % totTRJ)
-        if self.runMode == 'serial':
+        if self.mode == 'serial':
             for i in range(totTRJ):
                 runDir = self.dirRoot + '/' + dirMeta + '/' + dirRUNs[i]
                 #self.runMeta(runDir)
                 runMeta(dire=runDir, engine=self.engine, runName=self.runName, pluName=self.pluName, cvOut=self.cvOut, trjName=self.trjName)
-        elif self.runMode == 'parallel':
+        elif self.mode == 'parallel':
             # record = []
             # lock = multiprocessing.Lock()
             # runDir_list = []
@@ -475,10 +514,10 @@ class TAPS(object):
                 tid = iter * size + rank
                 if tid < N_jobs:
                     runDir = self.dirRoot + '/' + dirMeta + '/' + dirRUNs[tid]
-                    #print("+++DEBUG+++ runMeta", tid, "of", N_jobs, ", size", size, ", rank", rank, "iter,", iter)
+                    print("+++DEBUG+++ runMeta", tid, "of", N_jobs, ", size", size, ", rank", rank, "iter,", iter)
                     runMeta(dire=runDir, engine=self.engine, runName=self.runName, pluName=self.pluName,
                             cvOut=self.cvOut, trjName=self.trjName)
-        elif self.runMode == 'qjobs':
+        elif self.mode == 'qjobs':
             raise ValueError("qjobs version to be implemented")
 
     # ==================================================================================================================
@@ -549,11 +588,11 @@ class TAPS(object):
     def tmd_sample(self, dirMeta, dirTMD):
         totTRJ = len(dirTMD)  # the total number of trajectories to run
         # print("%d trajectories to sample in total." % totTRJ)
-        if self.runMode == 'serial':
+        if self.mode == 'serial':
             for i in range(totTRJ):
                 runDir = self.dirRoot + '/' + dirMeta + '/' + dirTMD[i]
                 runTMD(dire=runDir, engine=self.engine, runName=self.runName, pluName=self.pluName, trjName=self.trjName)
-        elif self.runMode == 'parallel':
+        elif self.mode == 'parallel':
             # record = []
             # lock = multiprocessing.Lock()
             # pool = multiprocessing.Pool(processes=8)
@@ -570,8 +609,8 @@ class TAPS(object):
                     runDir = self.dirRoot + '/' + dirMeta + '/' + dirTMD[tid]
                     runTMD(dire=runDir, engine=self.engine, runName=self.runName, pluName=self.pluName,
                            trjName=self.trjName)
-                    #print("+++DEBUG+++ runTMD", tid, "of", N_jobs, ", size", size, ", rank", rank, "iter,", iter)
-        elif self.runMode == 'qjobs':
+                    print("+++DEBUG+++ runTMD", tid, "of", N_jobs, ", size", size, ", rank", rank, "iter,", iter)
+        elif self.mode == 'qjobs':
             raise ValueError("qjobs version to be implemented")
         ## cat all tmd conformations together into one trajectory for reparameterization
         #listTMD = []
@@ -605,7 +644,7 @@ class TAPS(object):
         if rank == 0:
             print("      Filtering metaD trajectories: restraining potential must not exceed ", self.rsTol)
             print("      Finding median(z) conformations")
-        #print("+++DEBUG+++ meta_analyze", "size", size, ", rank", rank)
+        print("+++DEBUG+++ meta_analyze", "size", size, ", rank", rank)
 
         comm.Barrier()
         if rank == 0:
@@ -742,9 +781,10 @@ class TAPS(object):
                 dirTMDs = None
             dirTMDs = comm.bcast(dirTMDs, root=0)
             comm.Barrier()
-
+            print("###DEBUG### Barrier before tmd_sample")
             dataTMD = self.tmd_sample(dirMeta,dirTMDs)
             comm.Barrier()
+            print("###DEBUG### Barrier after tmd_sample")
             # use the tMD samples to insert
             if rank == 0:
                 for i in range(len(dirTMDs)):

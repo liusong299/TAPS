@@ -14,7 +14,8 @@ import subprocess
 #=======================================================================================================================
 #                               global names for plumed command: 'plumed' and 'driver'
 #=======================================================================================================================
-#plu="srun --ntasks=1 --hint=nomultithread --ntasks-per-node=1 --ntasks-per-socket=1 --ntasks-per-core=1 --mem_bind=v,local plumed" # TODO: put binary name of 'plumed' as input
+#plu="srun --ntasks=1 --hint=nomultithread --ntasks-per-node=1 --ntasks-per-socket=1 --ntasks-per-core=1 --mem_bind=v,local plumed"
+#  TODO: put binary name of 'plumed' as input
 plu="plumed"
 dri="driver" # TODO: put binary name of 'driver' as input
 
@@ -22,8 +23,8 @@ class Path(object):
     # ==================================================================================================================
     # constructor: one input at least - the name of the path
     # ==================================================================================================================
-    def __init__(self, pName="path_noName", pInd = None, nodes = None):
-        self.pathName =  pName
+    def __init__(self, pName="path_node", pInd = None, nodes = None):
+        self.pathName = pName
         self.pcvInd = deepcopy(pInd)
         self.nodes = deepcopy(nodes)
         if (pInd is not None) and (nodes is not None):
@@ -89,7 +90,7 @@ class Path(object):
             tmpOutFile = dire + "/pluOut.tmp"
             cmd = plu + " " + dri + " --mf_xtc " + trjFile + " --plumed " + pluInput \
                   + " 1>" + tmpOutFile + " 2>" + tmpOutFile
-            os.system(cmd);
+            os.system(cmd)
 
             # read plumed output
             fr = open(tmpCVfile, 'r+')
@@ -433,6 +434,8 @@ class Path(object):
                 tmp.append(Confs.traj2conf(trj.slice(sel)))
                 tmp.append(Confs.traj2conf(pathConfs.slice(range(i2, len(pathConfs)))))
                 pathConfs = Confs.merge(tmp)
+
+                # PathConfs.insert(i2, trj.slice(sel))
                 tmp = []
                 tmp.append(Confs.traj2conf(sub_opath.slice(range(i2))))
                 tmp.append(Confs.traj2conf(sub_data.slice(sel)))
@@ -454,7 +457,7 @@ class Path(object):
                 elif ((r1[sel] <= tolDist) and (r2[sel] <= tolDist)):
                     # print(r1[sel], '<=', tolDist, '\t', r2[sel], '<=', tolDist)
                     toInsert = toInsert + 1
-                    toInsert = np.delete(toInsert, 0)
+                    toInsert = np.delete(toInsert, 0) 
 
                 # if r1<=tolDist, r2>tolDist, only insert between newly inserted conf and i2
                 elif ((r1[sel] <= tolDist) and (r2[sel] > tolDist)):
