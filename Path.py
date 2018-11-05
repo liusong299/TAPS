@@ -25,8 +25,10 @@ class Path(object):
     # ==================================================================================================================
     def __init__(self, pName="path_node", pInd = None, nodes = None):
         self.pathName = pName
-        self.pcvInd = deepcopy(pInd)
-        self.nodes = deepcopy(nodes)
+        self.pcvInd = pInd
+        self.nodes = nodes
+        #self.pcvInd = deepcopy(pInd)
+        #self.nodes = deepcopy(nodes)
         if (pInd is not None) and (nodes is not None):
             self.n_nodes=self.nodes.n_frames
             # self.pcv()
@@ -276,8 +278,10 @@ class Path(object):
         if (iNode is None) or (fNode is None):
             raise ValueError("the two terminal nodes must be provided for truncation")
         else:
-            initNode = deepcopy(iNode)
-            finNode = deepcopy(fNode)
+            #initNode = deepcopy(iNode)
+            #finNode = deepcopy(fNode)
+            initNode = iNode
+            finNode = fNode
             sub_nodes=self.nodes.atom_slice(self.pcvInd.atomSlice)
             sub_i = initNode.atom_slice(self.pcvInd.atomSlice)
             sub_f = finNode.atom_slice(self.pcvInd.atomSlice)
@@ -361,6 +365,7 @@ class Path(object):
 
         # copy current nodes into a path, prepare for rmsd computation
         pathConfs = deepcopy(self.nodes)
+        #pathConfs = self.nodes
         if doPBC:
             pathConfs.image_molecules()
         sub_opath = pathConfs.atom_slice(self.pcvInd.atomSlice)
@@ -429,18 +434,29 @@ class Path(object):
                 ind_candidate = ind_data[logic_candidate]
                 sel = ind_candidate[np.argmin(cosTheta[logic_candidate])]  # find the candidate index in original data
                 # print('Found conformations between %d-%d, in data[%d]' % (i1, i2, sel))
-                tmp = []
-                tmp.append(Confs.traj2conf(pathConfs.slice(range(i2))))
-                tmp.append(Confs.traj2conf(trj.slice(sel)))
-                tmp.append(Confs.traj2conf(pathConfs.slice(range(i2, len(pathConfs)))))
-                pathConfs = Confs.merge(tmp)
+                #tmp = []
+                #tmp.append(Confs.traj2conf(pathConfs.slice(range(i2))))
+                #tmp.append(Confs.traj2conf(trj.slice(sel)))
+                #tmp.append(Confs.traj2conf(pathConfs.slice(range(i2, len(pathConfs)))))
+                #pathConfs = Confs.merge(tmp)
+
+                new_point = trj.slice(sel)
+                pathConfs = pathConfs[0:i2] + new_point + pathConfs[i2:len(pathConfs)]
+
+
+                #tmpConfs = pathConfs.slice(range(i2)).join(trj.slice(sel))
+                #pathConfs = tmpConfs.join(pathConfs.slice(range(i2, len(pathConfs))))
 
                 # PathConfs.insert(i2, trj.slice(sel))
-                tmp = []
-                tmp.append(Confs.traj2conf(sub_opath.slice(range(i2))))
-                tmp.append(Confs.traj2conf(sub_data.slice(sel)))
-                tmp.append(Confs.traj2conf(sub_opath.slice(range(i2, len(sub_opath)))))
-                sub_opath = Confs.merge(tmp)
+                #tmp = []
+                #tmp.append(Confs.traj2conf(sub_opath.slice(range(i2))))
+                #tmp.append(Confs.traj2conf(sub_data.slice(sel)))
+                #tmp.append(Confs.traj2conf(sub_opath.slice(range(i2, len(sub_opath)))))
+                #sub_opath = Confs.merge(tmp)
+
+                new_point = sub_data.slice(sel)
+                sub_opath = sub_opath[0:i2] + new_point + sub_opath[i2:len(sub_opath)]
+
                 # print('inserted pathConfs=', pathConfs)
                 # remove the conformation from dataset
                 ind_data = np.delete(ind_data, sel)
@@ -483,16 +499,19 @@ class Path(object):
     def distantNeighbors(self, tolDist=0.015, doPBC=False):
         listDistant = []
         # copy path nodes
-        nodes = deepcopy(self.nodes)
+        #nodes = deepcopy(self.nodes)
+        nodes = self.nodes
         n = nodes.n_frames
         # compute rmsd between neighbor nodes
         if doPBC:
             nodes.image_molecules()
         sub_nodes = nodes.atom_slice(self.pcvInd.atomSlice)
         sub_nodes.superpose(sub_nodes, 0, self.pcvInd.align)
-        distances = np.zeros((n, n), dtype=np.float)
+        distances = np.zeros((n, n), dtype=np.float) 
         for i in range(n-1):
-            dist = md.rmsd(sub_nodes.slice(i), sub_nodes.slice(i+1), 0, self.pcvInd.rms)
+            #dist = md.rmsd(sub_nodes.slice(i), sub_nodes.slice(i+1), 0, self.pcvInd.rms)
+            dist = md.rmsd(sub_nodes[i], sub_nodes.slice[i + 1], 0, self.pcvInd.rms)
             if dist > tolDist:
-                listDistant.append(nodes.slice([i,i+1]))
+                #listDistant.append(nodes.sliice([i,i+1]))
+                listDistant.append(nodes[i, i + 1])
         return listDistant
